@@ -205,6 +205,17 @@ body {
   to { transform: rotate(360deg); }
 }
 
+@keyframes slideInRight {
+  from { transform: translateX(40px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+@keyframes slideInLeft {
+  from { transform: translateX(-40px); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+.slide-forward { animation: slideInRight 0.25s ease-out both; }
+.slide-backward { animation: slideInLeft 0.25s ease-out both; }
+
 .animate-slide-up   { animation: slideUp 0.45s ease-out both; }
 .animate-fade-in    { animation: fadeIn 0.3s ease-out both; }
 .animate-pulse-soft { animation: pulseSoft 2s ease-in-out infinite; }
