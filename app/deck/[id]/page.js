@@ -14,18 +14,18 @@ const RATING_CONFIG = [
   { quality: 5, label: 'Easy',     sublabel: 'Instant recall',    color: 'sage'   },
 ];
 
-const ratingStyle = (color, active) => {
+const ratingStyle = (color) => {
   const map = {
-    rose:  { border: 'rgba(201,122,122,0.5)', hover: 'rgba(201,122,122,0.12)', text: 'var(--rose)' },
-    muted: { border: 'var(--border-soft)',     hover: 'rgba(232,168,66,0.06)',  text: 'var(--text-muted)' },
-    amber: { border: 'rgba(232,168,66,0.4)',   hover: 'rgba(232,168,66,0.12)', text: 'var(--amber-soft)' },
-    sage:  { border: 'rgba(125,171,130,0.4)',  hover: 'rgba(125,171,130,0.12)',text: 'var(--sage)' },
+    rose:  { border: 'rgba(201,122,122,0.5)', text: 'var(--rose)' },
+    muted: { border: 'var(--border-soft)',     text: 'var(--text-muted)' },
+    amber: { border: 'rgba(232,168,66,0.4)',   text: 'var(--amber-soft)' },
+    sage:  { border: 'rgba(125,171,130,0.4)',  text: 'var(--sage)' },
   };
   const c = map[color] || map.muted;
   return {
     border: `1.5px solid ${c.border}`,
     color: c.text,
-    background: active ? c.hover : 'var(--bg-raised)',
+    background: 'var(--bg-raised)',
     borderRadius: 12,
     transition: 'all 0.15s ease',
     cursor: 'pointer',
@@ -74,26 +74,27 @@ export default function DeckPage() {
   const { id }   = useParams();
   const router   = useRouter();
 
-  const [deck,         setDeck]         = useState(null);
-  const [queue,        setQueue]        = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [flipped,      setFlipped]      = useState(false);
-  const [sessionStats, setSessionStats] = useState({ reviewed: 0, correct: 0, prevMastery: 0 });
-  const [pageMode,     setPageMode]     = useState('launcher'); // launcher | study | test | overview | done
-  const [studyMode,    setStudyMode]    = useState('flashcard'); // flashcard | recall | mcq
-  const [testDuration, setTestDuration] = useState(300);
-  const [timeLeft,     setTimeLeft]     = useState(null);
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [motivation,   setMotivation]   = useState('');
-  const [mcqOptions,   setMcqOptions]   = useState([]);
-  const [mcqSelected,  setMcqSelected]  = useState(null);
-  const [mcqRevealed,  setMcqRevealed]  = useState(false);
-  const [theme,        setTheme]        = useState('dark');
-  // Active recall state
-  const [recallInput,  setRecallInput]  = useState('');
+  const [deck,           setDeck]           = useState(null);
+  const [queue,          setQueue]          = useState([]);
+  const [currentIndex,   setCurrentIndex]   = useState(0);
+  const [flipped,        setFlipped]        = useState(false);
+  const [sessionStats,   setSessionStats]   = useState({ reviewed: 0, correct: 0, prevMastery: 0 });
+  const [pageMode,       setPageMode]       = useState('launcher');
+  const [studyMode,      setStudyMode]      = useState('flashcard');
+  const [testDuration,   setTestDuration]   = useState(300);
+  const [timeLeft,       setTimeLeft]       = useState(null);
+  const [showConfetti,   setShowConfetti]   = useState(false);
+  const [motivation,     setMotivation]     = useState('');
+  const [mcqOptions,     setMcqOptions]     = useState([]);
+  const [mcqSelected,    setMcqSelected]    = useState(null);
+  const [mcqRevealed,    setMcqRevealed]    = useState(false);
+  const [theme,          setTheme]          = useState('dark');
+  const [recallInput,    setRecallInput]    = useState('');
   const [recallRevealed, setRecallRevealed] = useState(false);
-  const timerRef    = useRef(null);
-  const recallRef   = useRef(null);
+  const [direction,      setDirection]      = useState('forward');
+
+  const timerRef  = useRef(null);
+  const recallRef = useRef(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('fe_theme') || 'dark';
@@ -116,19 +117,21 @@ export default function DeckPage() {
     setMotivation(getMotivation('start'));
   }, [id]);
 
-  const currentCard  = queue[currentIndex];
-  const mastery      = deck ? getMastery(deck.cards) : 0;
-  const weakTopics   = deck ? getWeakTopics(deck.cards) : [];
-  const accuracy     = sessionStats.reviewed
+  const currentCard = queue[currentIndex];
+  const mastery     = deck ? getMastery(deck.cards) : 0;
+  const weakTopics  = deck ? getWeakTopics(deck.cards) : [];
+  const accuracy    = sessionStats.reviewed
     ? Math.round((sessionStats.correct / sessionStats.reviewed) * 100) : 100;
 
   useEffect(() => {
     if (studyMode === 'mcq' && currentCard && deck) {
       setMcqOptions(generateMCQOptions(currentCard, deck.cards));
-      setMcqSelected(null); setMcqRevealed(false);
+      setMcqSelected(null);
+      setMcqRevealed(false);
     }
     if (studyMode === 'recall') {
-      setRecallInput(''); setRecallRevealed(false);
+      setRecallInput('');
+      setRecallRevealed(false);
     }
   }, [currentIndex, studyMode, currentCard]);
 
@@ -136,7 +139,10 @@ export default function DeckPage() {
     if (!currentCard) return;
     const remaining = queue.length - currentIndex;
     const ctx = accuracy < 50 ? 'struggling' : accuracy >= 75 ? 'doing_well' : 'start';
-    setMotivation(getMotivation(studyMode === 'mcq' ? 'mcq' : studyMode === 'test' ? 'test_mode' : ctx, accuracy, remaining));
+    setMotivation(getMotivation(
+      studyMode === 'mcq' ? 'mcq' : studyMode === 'test' ? 'test_mode' : ctx,
+      accuracy, remaining
+    ));
   }, [currentIndex]);
 
   useEffect(() => {
@@ -151,9 +157,12 @@ export default function DeckPage() {
     const due   = getDueCards(deck.cards);
     const cards = due.length > 0 ? due : deck.cards;
     setQueue(cards.sort(() => Math.random() - 0.5));
-    setCurrentIndex(0); setFlipped(false);
+    setCurrentIndex(0);
+    setFlipped(false);
     setStudyMode(mode);
-    setRecallInput(''); setRecallRevealed(false);
+    setRecallInput('');
+    setRecallRevealed(false);
+    setDirection('forward');
     setSessionStats({ reviewed: 0, correct: 0, prevMastery: getMastery(deck.cards) });
     setShowConfetti(false);
     if (mode === 'test') { setTimeLeft(testDuration); setPageMode('test'); }
@@ -169,25 +178,32 @@ export default function DeckPage() {
     setPageMode('done');
   }, [id, deck]);
 
-  const advanceCard = useCallback((isCorrect) => {
+  const advanceCard = useCallback((isCorrect, dir = 'forward') => {
+    setDirection(dir);
     setSessionStats((prev) => ({
       ...prev,
       reviewed: prev.reviewed + 1,
       correct: prev.correct + (isCorrect ? 1 : 0),
     }));
     setFlipped(false);
-    setMcqSelected(null); setMcqRevealed(false);
-    setRecallInput(''); setRecallRevealed(false);
+    setMcqSelected(null);
+    setMcqRevealed(false);
+    setRecallInput('');
+    setRecallRevealed(false);
     setTimeout(() => {
-      if (currentIndex + 1 >= queue.length) finishSession();
-      else setCurrentIndex((i) => i + 1);
+      if (dir === 'forward') {
+        if (currentIndex + 1 >= queue.length) finishSession();
+        else setCurrentIndex((i) => i + 1);
+      } else {
+        setCurrentIndex((i) => Math.max(0, i - 1));
+      }
     }, studyMode === 'mcq' ? 800 : 250);
   }, [currentIndex, queue.length, finishSession, studyMode]);
 
   const handleRate = useCallback((quality) => {
     if (!currentCard || !deck) return;
     if (pageMode !== 'test') {
-      const updates    = sm2(currentCard, quality);
+      const updates     = sm2(currentCard, quality);
       const updatedDeck = updateCard(deck.id, currentCard.id, updates);
       setDeck(updatedDeck);
     }
@@ -196,7 +212,8 @@ export default function DeckPage() {
 
   const handleMCQ = (option) => {
     if (mcqRevealed) return;
-    setMcqSelected(option); setMcqRevealed(true);
+    setMcqSelected(option);
+    setMcqRevealed(true);
     const isCorrect = option === currentCard.answer;
     if (pageMode !== 'test' && isCorrect) {
       const updates = sm2(currentCard, 4);
@@ -205,13 +222,21 @@ export default function DeckPage() {
     setTimeout(() => advanceCard(isCorrect), 800);
   };
 
-  // Keyboard commands
+  const jumpToCard = (i) => {
+    setDirection(i > currentIndex ? 'forward' : 'backward');
+    setFlipped(false);
+    setMcqSelected(null);
+    setMcqRevealed(false);
+    setRecallInput('');
+    setRecallRevealed(false);
+    setCurrentIndex(i);
+  };
+
   useEffect(() => {
     const handler = (e) => {
       if (pageMode !== 'study' && pageMode !== 'test') return;
       if (studyMode === 'mcq') return;
       if (studyMode === 'recall' && document.activeElement === recallRef.current) return;
-
       if (e.key === ' ') {
         e.preventDefault();
         if (studyMode === 'recall') {
@@ -235,7 +260,6 @@ export default function DeckPage() {
 
   const formatTime = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
-  // guides
   const S = {
     label: { fontFamily: 'DM Mono', color: 'var(--text-faint)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em' },
     cardQuestion: { fontFamily: 'Playfair Display', color: 'var(--text-primary)', fontSize: '1.4rem', lineHeight: 1.5, wordBreak: 'break-word', overflowWrap: 'break-word' },
@@ -252,7 +276,7 @@ export default function DeckPage() {
     </div>
   );
 
-  // launcher
+  // ── LAUNCHER ──────────────────────────────────────────────────────────────
   if (pageMode === 'launcher') {
     const due = getDueCards(deck.cards).length;
     return (
@@ -264,8 +288,7 @@ export default function DeckPage() {
           </button>
         </div>
 
-        <h2 style={{ fontFamily: 'Playfair Display', color: 'var(--text-primary)', lineHeight: 1.25 }}
-          className="text-4xl mb-2">{deck.title}</h2>
+        <h2 style={{ fontFamily: 'Playfair Display', color: 'var(--text-primary)', lineHeight: 1.25 }} className="text-4xl mb-2">{deck.title}</h2>
         <p style={{ color: 'var(--text-muted)', fontFamily: 'DM Mono' }} className="text-sm mb-3">
           {deck.cards.length} cards · {mastery}% mastered
           {due > 0 && <span style={{ color: 'var(--amber-soft)' }}> · {due} due today</span>}
@@ -288,35 +311,34 @@ export default function DeckPage() {
         )}
 
         <div className="flex flex-col gap-3 mb-6">
-          {/* Flashcard */}
-          <button onClick={() => startStudy('flashcard')} style={{ ...S.surface, padding: 20, textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s ease' }}
+          <button onClick={() => startStudy('flashcard')}
+            style={{ ...S.surface, padding: 20, textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s ease' }}
             onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--amber-dim)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; }}>
             <p style={{ fontFamily: 'Playfair Display', color: 'var(--text-primary)', fontSize: '1.2rem', marginBottom: 4 }}>🃏 Flashcard Review</p>
-            <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Flip cards, rate recall — SM-2 schedules what's next</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Study at your own pace. Rate each card — harder ones come back sooner.</p>
             {due > 0 && <p style={{ color: 'var(--amber-soft)', fontFamily: 'DM Mono', fontSize: 12, marginTop: 6 }}>{due} cards due today</p>}
           </button>
 
-          {/* Active Recall */}
-          <button onClick={() => startStudy('recall')} style={{ ...S.surface, padding: 20, textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s ease', borderColor: 'rgba(125,171,130,0.3)' }}
+          <button onClick={() => startStudy('recall')}
+            style={{ ...S.surface, padding: 20, textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s ease', borderColor: 'rgba(125,171,130,0.3)' }}
             onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--sage)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(125,171,130,0.3)'; }}>
             <p style={{ fontFamily: 'Playfair Display', color: 'var(--text-primary)', fontSize: '1.2rem', marginBottom: 4 }}>✍️ Active Recall</p>
-            <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Type your answer before revealing — forces deeper thinking</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Write your answer before seeing it. The harder you think, the better it sticks.</p>
           </button>
 
-          {/* MCQ */}
-          <button onClick={() => startStudy('mcq')} style={{ ...S.surface, padding: 20, textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s ease', borderColor: 'rgba(125,171,130,0.2)' }}
+          <button onClick={() => startStudy('mcq')}
+            style={{ ...S.surface, padding: 20, textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s ease', borderColor: 'rgba(125,171,130,0.2)' }}
             onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--sage)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(125,171,130,0.2)'; }}>
             <p style={{ fontFamily: 'Playfair Display', color: 'var(--text-primary)', fontSize: '1.2rem', marginBottom: 4 }}>❓ MCQ Practice</p>
-            <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>4 options per card — tests recognition over free recall</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Pick the right answer from 4 options. Good for quick revision and recognition.</p>
           </button>
 
-          {/* Test */}
           <div style={{ ...S.surface, padding: 20, borderColor: 'rgba(201,122,122,0.2)' }}>
             <p style={{ fontFamily: 'Playfair Display', color: 'var(--text-primary)', fontSize: '1.2rem', marginBottom: 4 }}>⏱ Test Mode</p>
-            <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 14 }}>Timed session — pure testing, SM-2 not updated</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 14 }}>Set a timer and go through your deck. No pressure — just see where you stand.</p>
             <div className="flex gap-2 mb-4">
               {TEST_DURATIONS.map((d) => (
                 <button key={d.seconds} onClick={() => setTestDuration(d.seconds)}
@@ -345,13 +367,13 @@ export default function DeckPage() {
     );
   }
 
-  // overview
+  // ── OVERVIEW ──────────────────────────────────────────────────────────────
   if (pageMode === 'overview') {
     const byStatus = {
-      new:       deck.cards.filter((c) => getCardStatus(c) === 'new'),
-      struggling:deck.cards.filter((c) => getCardStatus(c) === 'struggling'),
-      learning:  deck.cards.filter((c) => getCardStatus(c) === 'learning'),
-      mastered:  deck.cards.filter((c) => getCardStatus(c) === 'mastered'),
+      new:        deck.cards.filter((c) => getCardStatus(c) === 'new'),
+      struggling: deck.cards.filter((c) => getCardStatus(c) === 'struggling'),
+      learning:   deck.cards.filter((c) => getCardStatus(c) === 'learning'),
+      mastered:   deck.cards.filter((c) => getCardStatus(c) === 'mastered'),
     };
     const statusColor = { new: 'var(--text-muted)', struggling: 'var(--rose)', learning: 'var(--amber-soft)', mastered: 'var(--sage)' };
     return (
@@ -383,7 +405,7 @@ export default function DeckPage() {
     );
   }
 
-  //completion of deck page
+  // ── DONE ──────────────────────────────────────────────────────────────────
   if (pageMode === 'done') {
     const improvement = mastery - sessionStats.prevMastery;
     return (
@@ -427,18 +449,17 @@ export default function DeckPage() {
     );
   }
 
-  // study/test
-  const progress = queue.length ? (currentIndex / queue.length) * 100 : 0;
-  const typeIcon  = { concept: '💡', definition: '📖', example: '🔢' };
-  const isTest    = pageMode === 'test';
-  const showRatings = studyMode === 'flashcard'
-    ? flipped
-    : studyMode === 'recall'
-    ? recallRevealed
+  // ── STUDY / TEST ───────────────────────────────────────────────────────────
+  const progress    = queue.length ? (currentIndex / queue.length) * 100 : 0;
+  const typeIcon    = { concept: '💡', definition: '📖', example: '🔢' };
+  const isTest      = pageMode === 'test';
+  const showRatings = studyMode === 'flashcard' ? flipped
+    : studyMode === 'recall' ? recallRevealed
     : false;
 
   return (
     <div className="min-h-screen flex flex-col px-5 py-8 max-w-2xl mx-auto">
+
       {/* Top bar */}
       <div className="flex items-center justify-between mb-6">
         <button onClick={() => setPageMode('launcher')} style={{ ...S.label, cursor: 'pointer' }}>← Back</button>
@@ -491,17 +512,22 @@ export default function DeckPage() {
 
       {/* ── MCQ ── */}
       {studyMode === 'mcq' && currentCard ? (
-        <div className="flex-1 flex flex-col gap-4 animate-fade-in">
-          <div style={{ ...S.surface, padding: '2rem', textAlign: 'center', flex: 'none' }}>
+        <div className="flex-1 flex flex-col gap-4">
+          <div
+            key={`mcq-q-${currentIndex}`}
+            className={direction === 'forward' ? 'slide-forward' : 'slide-backward'}
+            style={{ ...S.surface, padding: '2rem', textAlign: 'center', flex: 'none' }}>
             <p style={{ ...S.label, marginBottom: 16 }}>Question</p>
             <p style={S.cardQuestion}>{currentCard.question}</p>
           </div>
-          <div className="flex flex-col gap-2">
+          <div
+            key={`mcq-opts-${currentIndex}`}
+            className={`flex flex-col gap-2 ${direction === 'forward' ? 'slide-forward' : 'slide-backward'}`}>
             {mcqOptions.map((option, i) => {
               let extra = {};
               if (mcqRevealed) {
-                if (option === currentCard.answer)   extra = { borderColor: 'var(--sage)',  background: 'rgba(125,171,130,0.1)', color: 'var(--sage)' };
-                else if (option === mcqSelected)     extra = { borderColor: 'var(--rose)',  background: 'rgba(201,122,122,0.08)', color: 'var(--rose)', opacity: 1 };
+                if (option === currentCard.answer)  extra = { borderColor: 'var(--sage)', background: 'rgba(125,171,130,0.1)', color: 'var(--sage)' };
+                else if (option === mcqSelected)    extra = { borderColor: 'var(--rose)', background: 'rgba(201,122,122,0.08)', color: 'var(--rose)' };
                 else extra = { opacity: 0.45 };
               }
               return (
@@ -520,13 +546,10 @@ export default function DeckPage() {
       /* ── ACTIVE RECALL ── */
       ) : studyMode === 'recall' && currentCard ? (
         <div className="flex-1 flex flex-col gap-5 animate-fade-in">
-          {/* Question */}
           <div style={{ ...S.surface, padding: '2.5rem', textAlign: 'center' }}>
             <p style={{ ...S.label, marginBottom: 18 }}>Question</p>
             <p style={S.cardQuestion}>{currentCard.question}</p>
           </div>
-
-          {/* Input area */}
           {!recallRevealed && (
             <div className="animate-fade-in">
               <textarea
@@ -537,16 +560,13 @@ export default function DeckPage() {
                 className="recall-input"
                 rows={3}
               />
-              <button
-                onClick={() => setRecallRevealed(true)}
+              <button onClick={() => setRecallRevealed(true)}
                 style={{ ...S.btnPrimary, width: '100%', marginTop: 10, textAlign: 'center', fontSize: 14 }}>
                 Reveal Answer {recallInput.trim() ? '& Compare' : ''}
               </button>
               <p style={{ ...S.label, textAlign: 'center', marginTop: 8 }}>or press space</p>
             </div>
           )}
-
-          {/* Revealed answer */}
           {recallRevealed && (
             <div className="animate-fade-in">
               {recallInput.trim() && (
@@ -568,7 +588,7 @@ export default function DeckPage() {
           )}
         </div>
 
-      /* flashcard */
+      /* ── FLASHCARD ── */
       ) : currentCard ? (
         <div className={`flip-card flex-1 ${flipped ? 'flipped' : ''}`}
           style={{ minHeight: 300 }}
@@ -592,14 +612,14 @@ export default function DeckPage() {
         </div>
       ) : null}
 
-      {/* rating buttons  */}
+      {/* ── RATING BUTTONS ── */}
       <div style={{ marginTop: 24, transition: 'all 0.3s ease', opacity: showRatings ? 1 : 0, transform: showRatings ? 'translateY(0)' : 'translateY(12px)', pointerEvents: showRatings ? 'auto' : 'none' }}>
         <p style={{ ...S.label, textAlign: 'center', marginBottom: 12 }}>How well did you know it?</p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
           {RATING_CONFIG.map(({ quality, label, sublabel, color }) => (
             <button key={quality}
               onClick={(e) => { e.stopPropagation(); handleRate(quality); }}
-              style={ratingStyle(color, false)}>
+              style={ratingStyle(color)}>
               <div style={{ fontFamily: 'DM Mono', fontSize: 11, fontWeight: 500 }}>{label}</div>
               <div style={{ fontFamily: 'DM Sans', fontSize: 10, opacity: 0.55, marginTop: 2 }} className="hidden sm:block">{sublabel}</div>
             </button>
@@ -608,8 +628,41 @@ export default function DeckPage() {
         <p style={{ ...S.label, textAlign: 'center', marginTop: 10 }}>space to flip · 1–5 to rate</p>
       </div>
 
+      {/* ── TEST MODE NAV ── */}
+      {isTest && (
+        <div className="flex justify-between items-center mt-5">
+          <button
+            onClick={() => advanceCard(false, 'backward')}
+            disabled={currentIndex === 0}
+            style={{ ...S.btn, opacity: currentIndex === 0 ? 0.3 : 1, fontSize: 13, padding: '8px 16px' }}>
+            ← Prev
+          </button>
+          <button
+            onClick={() => advanceCard(false, 'forward')}
+            style={{ ...S.btnPrimary, fontSize: 13, padding: '8px 20px' }}>
+            Next →
+          </button>
+        </div>
+      )}
+
+      {/* ── NUMBERED CARD PILLS ── */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center', marginTop: 16 }}>
+        {queue.map((_, i) => (
+          <button key={i} onClick={() => jumpToCard(i)}
+            style={{
+              width: 28, height: 28, borderRadius: '50%', fontSize: 11,
+              fontFamily: 'DM Mono', cursor: 'pointer', transition: 'all 0.15s',
+              background: i === currentIndex ? 'var(--amber)' : i < currentIndex ? 'var(--bg-card)' : 'var(--bg-raised)',
+              border: `1.5px solid ${i === currentIndex ? 'var(--amber)' : 'var(--border)'}`,
+              color: i === currentIndex ? '#1a1612' : i < currentIndex ? 'var(--text-muted)' : 'var(--text-faint)',
+            }}>
+            {i + 1}
+          </button>
+        ))}
+      </div>
+
       {/* Session stats */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 24, marginTop: 20, color: 'var(--text-faint)', fontFamily: 'DM Mono', fontSize: 11 }}>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 24, marginTop: 16, color: 'var(--text-faint)', fontFamily: 'DM Mono', fontSize: 11 }}>
         <span>{sessionStats.reviewed} reviewed</span>
         <span>{accuracy}% accuracy</span>
         <span>{mastery}% mastered</span>
