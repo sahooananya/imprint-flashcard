@@ -67,15 +67,57 @@ export default function Home() {
     document.documentElement.setAttribute('data-theme', next);
   };
 
+  async function compressImage(file) {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 1200;
+        let { width, height } = img;
+        if (width > MAX) { height = (height * MAX) / width; width = MAX; }
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        canvas.toBlob((blob) => resolve(new File([blob], file.name, { type: 'image/jpeg' })), 'image/jpeg', 0.82);
+      };
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
   const handleFile = async (file) => {
     const name = file?.name?.toLowerCase() || '';
     const allowed = file && (
-      file.type === 'application/pdf' ||
-      file.type.startsWith('image/') ||
-      name.endsWith('.pptx') || name.endsWith('.ppt') ||
-      file.type.includes('presentationml') || file.type.includes('ms-powerpoint')
+        file.type === 'application/pdf' ||
+        file.type.startsWith('image/') ||
+        name.endsWith('.pptx') || name.endsWith('.ppt') ||
+        file.type.includes('presentationml') || file.type.includes('ms-powerpoint')
     );
     if (!allowed) { setUploadStatus('Upload a PDF, PowerPoint (.pptx), or image.'); return; }
+
+    if (file.size > 4 * 1024 * 1024 && (name.endsWith('.pptx') || name.endsWith('.ppt'))) {
+      setUploadStatus('PPTX must be under 4MB. Try fewer slides.');
+      return;
+    }
+
+    let processedFile = file;
+
+    if (file.type.startsWith('image/')) {
+      processedFile = await new Promise((resolve) => {
+        const canvas = document.createElement('canvas');
+        const img = new Image();
+        img.onload = () => {
+          const MAX = 1200;
+          let { width, height } = img;
+          if (width > MAX) { height = (height * MAX) / width; width = MAX; }
+          canvas.width = width; canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+          canvas.toBlob(
+              (blob) => resolve(new File([blob], file.name, { type: 'image/jpeg' })),
+              'image/jpeg', 0.82
+          );
+        };
+        img.src = URL.createObjectURL(file);
+      });
+    }
 
     const deckTitle = deckName.trim() || file.name.replace(/\.[^.]+$/, '');
     setUploading(true);
@@ -84,7 +126,7 @@ export default function Home() {
 
     try {
       const fd = new FormData();
-      fd.append('file', file);
+      fd.append('file', processedFile);
       fd.append('mode', mode);
       setUploadStatus('Generating flashcards…');
       const res  = await fetch('/api/generate', { method: 'POST', body: fd });
@@ -135,7 +177,7 @@ export default function Home() {
   return (
     <main className="min-h-screen px-5 py-10 max-w-4xl mx-auto">
 
-      {/* ── HEADER ─────────────────────────────────────────────────── */}
+      {/*header */}
       <header className="flex items-start justify-between mb-12 animate-slide-up">
         <div>
           <p style={{ color: 'var(--amber)', fontFamily: 'DM Mono' }}
@@ -255,25 +297,26 @@ export default function Home() {
           className="w-full px-4 py-3 text-sm transition-colors focus:outline-none" />
       </div>
 
-      {/* masteryexplaination*/}
-      <div style={{
-        background: 'var(--bg-card)', border: '1.5px solid var(--border)',
-        borderRadius: 14, padding: '16px 20px', marginBottom: 24,
-        display: 'flex', gap: 14, alignItems: 'flex-start'
-      }}>
-        <span style={{fontSize: 22, flexShrink: 0}}>🔁</span>
-        <div>
-          <p style={{color: 'var(--text-primary)', fontWeight: 500, marginBottom: 4, fontSize: 14}}>
-            Why isn't your deck 100% yet?
-          </p>
-          <p style={{color: 'var(--text-muted)', fontSize: 13, lineHeight: 1.6, margin: 0}}>
-            Because remembering something once isn't the same as knowing it. Mastery means you recalled it today, again in a few days, and again a week later — that's what sticks.
-          </p>
-        </div>
-      </div>
-
       {/* deck list */}
       {decks.length > 0 && (
+          <>
+          {/* mastery explanation */}
+          <div style={{
+            background: 'var(--bg-card)', border: '1.5px solid var(--border)',
+            borderRadius: 14, padding: '16px 20px', marginBottom: 24,
+            display: 'flex', gap: 14, alignItems: 'flex-start'
+          }}>
+            <span style={{fontSize: 22, flexShrink: 0}}>🔁</span>
+            <div>
+              <p style={{color: 'var(--text-primary)', fontWeight: 500, marginBottom: 4, fontSize: 14}}>
+                Why isn't your deck 100% yet?
+              </p>
+              <p style={{color: 'var(--text-muted)', fontSize: 13, lineHeight: 1.6, margin: 0}}>
+                Because remembering something once isn't the same as knowing it. Mastery means you recalled it today, again in a few days, and again a week later — that's what sticks.
+              </p>
+            </div>
+          </div>
+
         <section>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
             <h2 style={{ color: 'var(--text-primary)', fontFamily: 'Playfair Display' }} className="text-2xl">Your Decks</h2>
@@ -369,6 +412,7 @@ export default function Home() {
             })}
           </div>
         </section>
+      </>
       )}
 
       {decks.length === 0 && !uploading && (
