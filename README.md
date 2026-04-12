@@ -148,7 +148,7 @@ npm install
 
 Create `.env.local`:
 ```
-GROQ_API_KEY=your_key_here
+your_API_KEY = your_key_value_here
 ```
 
 Get a free key at [console.groq.com](https://console.groq.com)
@@ -162,7 +162,7 @@ Open [http://localhost:3000](http://localhost:3000)
 ---
 ## Updates comming up next--->
 
-- Optional user accounts with cloud sync
+- User accounts with cloud sync
 - Better document parsing — chunk by section, detect headings and structure
 - Topic-level card generation — pick which section to generate from
 - Review heatmap and time-per-card analytics
