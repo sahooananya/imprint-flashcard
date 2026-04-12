@@ -1,18 +1,27 @@
-# Imprint — Leave a mark on your memory.
+<h1 align="center">Imprint</h1>
 
-Built for the long game.
+<p align="center">
+  <em>Leave a mark on your memory. Built for the long game.</em>
+</p>
+<p align="center">
+  <img src="https://img.shields.io/badge/Next.js_14-000000?style=for-the-badge&logo=nextdotjs&logoColor=white" />
+  <img src="https://img.shields.io/badge/Groq_Llama_3.3-FF6B35?style=for-the-badge&logo=meta&logoColor=white" />
+  <img src="https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white" />
+  <img src="https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" />
+  <img src="https://img.shields.io/badge/SM--2_Algorithm-4CAF50?style=for-the-badge&logo=bookstack&logoColor=white" />
+</p>
 
-Imprint turns any PDF, PowerPoint, or image into a smart flashcard deck — then helps you actually retain what you studied using spaced repetition and active recall.
-
-Live at **[Here](https://imprint-flashcard.vercel.app)**
+<p align="center">
+  <a href="https://imprint-flashcard.vercel.app"><strong>→ Try it live</strong></a>
+</p>
 
 ---
 
-## Why I built this
+## What is Imprint?
 
 Most flashcard apps are just card flippers. You flip, you read, you move on. That's recognition — not recall. And recognition fades fast.
 
-I built Imprint around a different belief: the act of retrieving information is what makes it stick. Not re-reading. Not passively flipping. Actually pulling the answer out of your head — under mild pressure, spaced over time.
+Imprint is built around a different belief: **the act of retrieving information is what makes it stick.** Not re-reading. Not passively flipping. Actually pulling the answer out of your head — under mild pressure, spaced over time.
 
 Every decision in this project came from that belief.
 
@@ -20,72 +29,112 @@ Every decision in this project came from that belief.
 
 ## What it does
 
-**Upload anything**
-Drop in a PDF, a PowerPoint deck, or a photo of your notes. Imprint extracts the content and generates flashcards that cover concepts, definitions, and worked examples — not just surface facts.
+### Upload anything
+Drop in a PDF, a PowerPoint (.pptx), or a photo of your notes. Imprint extracts the content and generates flashcards covering concepts, definitions, and worked examples — not just surface facts.
 
-**Four study modes**
-- **Flashcard Review** — flip and rate. SM-2 schedules what comes next
-- **Active Recall** — type your answer before the reveal. Forces real retrieval
-- **MCQ Practice** — four options per card, distractors pulled from your own deck
-- **Test Mode** — timed session, pure assessment, SM-2 not updated so it doesn't corrupt your review schedule
+| Mode | Cards | Best for |
+|------|-------|----------|
+| ⚡ Quick | 10 | Fast overview |
+| 📖 Standard | 20 | Balanced coverage |
+| 🧠 Deep | 35 | Comprehensive study |
 
-**Spaced repetition that actually works**
-Every card has its own ease factor and interval. Rate something easy — it fades for weeks. Rate it hard — it's back tomorrow. Mastery requires correct recall across three separate sessions on different days. One good run doesn't count.
+---
 
-**Progress that means something**
-Mastery percentage, weak area detection, next review dates on every card, daily streak tracking, and a session summary that shows improvement over time.
+### Four study modes
 
-**Dark and light mode**
-Because you're going to be staring at this for a while.
+| Mode | What it does |
+|------|-------------|
+| 🃏 Flashcard Review | Flip and rate. SM-2 schedules what comes next |
+| ✍️ Active Recall | Type your answer before the reveal. Forces real retrieval |
+| ❓ MCQ Practice | 4 options per card. Distractors pulled from your own deck — no extra API call |
+| ⏱ Test Mode | Timed session (3 / 5 / 10 min). SM-2 not updated — pure assessment |
+
+---
+
+### Spaced repetition — SM-2
+
+Every card has its own ease factor and interval that adjusts independently based on performance.
+
+```
+Rate "Easy"    → card fades for weeks
+Rate "Hard"    → card is back tomorrow  
+Rate "Blackout"→ resets to 1 day
+```
+
+**Mastery ≠ accuracy.** A card is mastered only after correct recall across **3 separate sessions on different days.** One good run doesn't count.
+
+---
+
+### Progress that means something
+
+- Per-deck mastery percentage with progress bar
+- Weak area detection — shows which topics you're struggling with by accuracy
+- Next review date on every card after flip
+- Improvement message at session end — "Mastery 40% → 65%"
+- Daily streak counter
+- Confetti on 100% mastery
+
+---
+
+### Deck management
+
+- Search by name, filter by All / Due / Recent / Mastered
+- Topics shown as tags per deck
+- Card type breakdown per deck: 💡 Concept · 📖 Definition · 🔢 Example
+- Resume indicator on previously studied decks
+- Dark and light mode — persists across sessions
 
 ---
 
 ## Tech stack
 
 | Layer | Choice | Why |
-|---|---|---|
-| Framework | Next.js 14 | API routes keep the key server-side. One repo, frontend + backend |
-| AI | Groq (Llama 3.3 70B + Llama 4 Scout vision) | Fast, free tier, handles both text and image input |
-| PDF parsing | pdf-parse | Reliable text extraction from text-based PDFs |
-| PPTX parsing | JSZip | A .pptx is just a zip. Parse the XML directly, no heavy dependencies |
-| Styling | Tailwind CSS + CSS custom properties | Token-based theming for clean dark/light switching |
-| Storage | localStorage | Zero infrastructure, zero friction. Trade-off: no cross-device sync |
-| Deployment | Vercel | One push, it's live |
+|-------|--------|-----|
+| Framework | Next.js 14 | API routes keep the Groq key server-side — never exposed to browser |
+| AI — Text | Groq Llama 3.3 70B | Fast, free tier, excellent output quality |
+| AI — Vision | Groq Llama 4 Scout | Extracts text from image uploads |
+| PDF | pdf-parse | Reliable text extraction |
+| PPTX | JSZip | A .pptx is a zip archive — parse slide XML directly, no ESM conflicts |
+| Styling | Tailwind CSS + CSS custom properties | Token-based dark/light theming |
+| Storage | localStorage | Zero infrastructure, instant start. Trade-off: no cross-device sync |
+| Deployment | Vercel | One push, live in minutes |
 
 ---
 
-## How the card generation works
+## How card generation works
 
-Two-pass pipeline on every upload:
+Two API calls per upload:
 
-1. **Topic extraction** — first call identifies the main sections and themes in the document
-2. **Card generation** — second call generates structured cards across three types: concept, definition, example
+```
+Upload file
+    ↓
+Extract text (PDF / PPTX XML / Groq vision for images)
+    ↓
+Pass 1 — extract main topics from content
+    ↓
+Pass 2 — generate cards (concept + definition + example mix)
+    ↓
+SM-2 defaults applied → deck ready
+```
 
-The prompt engineering here matters. Cards are explicitly instructed to cover relationships, edge cases, and "why" questions — not just definitions scraped from the surface.
-
-Generation modes:
-- **Quick** — 10 cards, fast overview
-- **Standard** — 20 cards, balanced coverage
-- **Deep** — 35 cards, comprehensive
+Cards are explicitly prompted to cover relationships, edge cases, and "why" questions — not just definitions scraped from the surface.
 
 ---
 
 ## How spaced repetition works
 
-SM-2 algorithm. Same one behind Anki.
+SM-2 algorithm — the same one behind Anki.
 
 Every card tracks:
-- `repetitions` — how many times recalled correctly in sequence
-- `easeFactor` — starts at 2.5, adjusts based on rating
+- `repetitions` — correct recalls in sequence
+- `easeFactor` — starts at 2.5, adjusts per rating
 - `interval` — days until next review
-- `nextReview` — exact date scheduled
+- `nextReview` — exact scheduled date
 
-Rating scale: Blackout / Again / Hard / Good / Easy (0, 2, 3, 4, 5)
+Rating scale: **Blackout (0) / Again (2) / Hard (3) / Good (4) / Easy (5)**
 
 Wrong answer → interval resets to 1 day
-Correct answer → interval multiplies by easeFactor
-
-A card is mastered only when `repetitions >= 3` — meaning correct recall across at least three separate spaced sessions.
+Correct answer → interval × easeFactor
 
 ---
 
@@ -99,42 +148,28 @@ npm install
 
 Create `.env.local`:
 ```
-YOUR_API_KEY=your_key_value_here
+GROQ_API_KEY=your_key_here
 ```
 
-Get a free key at **[console.groq.com](https://console.groq.com)**
+Get a free key at [console.groq.com](https://console.groq.com)
 
 ```bash
 npm run dev
 ```
 
-Open `http://localhost:3000`
+Open [http://localhost:3000](http://localhost:3000)
 
 ---
-
-## What I'd build next
+## Updates comming up next--->
 
 - Optional user accounts with cloud sync
-- Better document parsing — chunk by section, not raw character count
-- Topic-level selection before generation ("generate cards from Chapter 3 only")
+- Better document parsing — chunk by section, detect headings and structure
+- Topic-level card generation — pick which section to generate from
 - Review heatmap and time-per-card analytics
 - Calendar view for upcoming review dates
 
 ---
 
-## Project structure
-
-```
-imprint-flashcard/
-├── app/
-│   ├── api/generate/route.js    ← PDF/PPTX/image extraction + card generation
-│   ├── deck/[id]/page.js        ← Study page — all four modes
-│   ├── page.js                  ← Home — upload, deck management
-│   └── globals.css              ← Theme tokens, card flip, animations
-├── lib/
-│   ├── sm2.js                   ← Spaced repetition algorithm
-│   ├── storage.js               ← localStorage read/write
-│   └── motivate.js              ← Contextual motivational messages
-```
-
-Built by **Ananya Sahoo** as part of the Cuemath AI Builder Challenge — April 2026.
+<p align="center">
+  Built by <strong>Ananya Sahoo</strong> · Cuemath AI Builder Challenge · April 2026
+</p>

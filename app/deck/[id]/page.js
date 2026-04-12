@@ -16,21 +16,22 @@ const RATING_CONFIG = [
 
 const ratingStyle = (color) => {
   const map = {
-    rose:  { border: 'rgba(201,122,122,0.5)', text: 'var(--rose)' },
-    muted: { border: 'var(--border-soft)',     text: 'var(--text-muted)' },
-    amber: { border: 'rgba(232,168,66,0.4)',   text: 'var(--amber-soft)' },
-    sage:  { border: 'rgba(125,171,130,0.4)',  text: 'var(--sage)' },
+    rose:  { border: 'rgba(201,122,122,0.8)', glow: 'rgba(201,122,122,0.2)', text: 'var(--rose)' },
+    muted: { border: 'var(--border-soft)',     glow: 'rgba(139,163,197,0.15)', text: 'var(--text-muted)' },
+    amber: { border: 'rgba(232,168,66,0.8)',   glow: 'rgba(232,168,66,0.2)', text: 'var(--amber-soft)' },
+    sage:  { border: 'rgba(125,171,130,0.8)',  glow: 'rgba(125,171,130,0.2)', text: 'var(--sage)' },
   };
   const c = map[color] || map.muted;
   return {
-    border: `1.5px solid ${c.border}`,
+    border: `2px solid ${c.border}`,
     color: c.text,
     background: 'var(--bg-raised)',
     borderRadius: 12,
-    transition: 'all 0.15s ease',
+    transition: 'all 0.2s ease',
     cursor: 'pointer',
     padding: '10px 4px',
     textAlign: 'center',
+    boxShadow: `0 0 0 0px ${c.glow}`,
   };
 };
 
@@ -340,7 +341,7 @@ export default function DeckPage() {
     </div>
   );
 
-  // ── LAUNCHER ──────────────────────────────────────────────────────────────
+
   if (pageMode === 'launcher') {
     const due = getDueCards(deck.cards).length;
     return (
@@ -434,7 +435,7 @@ export default function DeckPage() {
     );
   }
 
-  // ── OVERVIEW ──────────────────────────────────────────────────────────────
+
   if (pageMode === 'overview') {
     const byStatus = {
       new:        deck.cards.filter((c) => getCardStatus(c) === 'new'),
@@ -472,7 +473,7 @@ export default function DeckPage() {
     );
   }
 
-  // ── DONE ──────────────────────────────────────────────────────────────────
+  // completion pg
   if (pageMode === 'done') {
     const improvement = mastery - sessionStats.prevMastery;
     return (
@@ -516,7 +517,7 @@ export default function DeckPage() {
     );
   }
 
-  // ── STUDY / TEST ───────────────────────────────────────────────────────────
+
   const progress    = queue.length ? (currentIndex / queue.length) * 100 : 0;
   const typeIcon    = { concept: '💡', definition: '📖', example: '🔢' };
   const isTest      = pageMode === 'test';
@@ -577,7 +578,7 @@ export default function DeckPage() {
         </div>
       )}
 
-      {/* ── MCQ ── */}
+
       {studyMode === 'mcq' && currentCard ? (
         <div className="flex-1 flex flex-col gap-4">
           <div
@@ -610,7 +611,7 @@ export default function DeckPage() {
           </div>
         </div>
 
-      /* ── ACTIVE RECALL ── */
+      /* input space */
       ) : studyMode === 'recall' && currentCard ? (
         <div className="flex-1 flex flex-col gap-5 animate-fade-in">
           <div style={{ ...S.surface, padding: '2.5rem', textAlign: 'center' }}>
@@ -655,7 +656,7 @@ export default function DeckPage() {
           )}
         </div>
 
-      /* ── FLASHCARD ── */
+      /* deck */
       ) : currentCard ? (
         <div className={`flip-card flex-1 ${flipped ? 'flipped' : ''}`}
           style={{ minHeight: 300 }}
@@ -679,7 +680,7 @@ export default function DeckPage() {
         </div>
       ) : null}
 
-      {/* ── RATING BUTTONS ── */}
+      {/* rating area */}
       <div style={{ marginTop: 24, transition: 'all 0.3s ease', opacity: showRatings ? 1 : 0, transform: showRatings ? 'translateY(0)' : 'translateY(12px)', pointerEvents: showRatings ? 'auto' : 'none' }}>
         <p style={{ ...S.label, textAlign: 'center', marginBottom: 12 }}>How well did you know it?</p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
@@ -695,7 +696,7 @@ export default function DeckPage() {
         <p style={{ ...S.label, textAlign: 'center', marginTop: 10 }}>space to flip · 1–5 to rate</p>
       </div>
 
-      {/* ── TEST MODE NAV ── */}
+
       {isTest && (
         <div className="flex justify-between items-center mt-5">
           <button
@@ -712,7 +713,7 @@ export default function DeckPage() {
         </div>
       )}
 
-      {/* ── NUMBERED CARD PILLS ── */}
+      {/* pill */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center', marginTop: 16 }}>
         {queue.map((_, i) => (
           <button key={i} onClick={() => jumpToCard(i)}

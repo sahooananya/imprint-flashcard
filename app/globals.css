@@ -4,7 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─── DARK MODE — Oxford Blue palette ───────────────────────── */
+/* dark mode */
 :root {
   --bg:            #02122F;
   --bg-raised:     #0d1e40;
@@ -30,7 +30,7 @@
   --card-glow:         0 0 0 1px rgba(139,163,197,0.08);
 }
 
-/* ─── LIGHT MODE — Green palette ─────────────────────────────── */
+/* light mode ----*/
 [data-theme="light"] {
   --bg:            #F7F4D5;
   --bg-raised:     #eeebc4;
@@ -54,8 +54,6 @@
   --card-shadow-hover: 0 6px 32px rgba(10,51,35,0.14), 0 2px 8px rgba(10,51,35,0.08);
   --card-glow:         0 0 0 1px rgba(16,86,102,0.1);
 }
-
-/* ─── BASE ────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 
@@ -69,8 +67,6 @@ body {
   -webkit-font-smoothing: antialiased;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
-
-/* ─── TYPOGRAPHY ──────────────────────────────────────────────── */
 .text-display {
   font-family: 'Playfair Display', Georgia, serif;
   font-weight: 600;
@@ -130,7 +126,7 @@ body {
   color: var(--text-secondary);
 }
 
-/* ─── CARD SURFACES ───────────────────────────────────────────── */
+/* deck */
 .card-surface {
   background: var(--bg-card);
   border: 1.5px solid var(--border);
@@ -144,7 +140,7 @@ body {
   transform: translateY(-1px);
 }
 
-/* ─── FLASHCARD FLIP ──────────────────────────────────────────── */
+/* flip*/
 .flip-card {
   perspective: 1400px;
   cursor: pointer;
@@ -189,7 +185,7 @@ body {
   box-shadow: var(--card-shadow);
 }
 
-/* ─── BUTTONS ─────────────────────────────────────────────────── */
+/* button */
 .btn-primary {
   font-family: 'Inter', sans-serif;
   font-weight: 500;
@@ -219,7 +215,7 @@ body {
 }
 .btn-ghost:hover { border-color: var(--border-soft); color: var(--text-primary); }
 
-/* ─── INPUTS ──────────────────────────────────────────────────── */
+/* i/o */
 .recall-input {
   width: 100%;
   background: var(--bg-raised);
@@ -241,7 +237,7 @@ body {
 }
 .recall-input::placeholder { color: var(--text-faint); font-style: italic; }
 
-/* ─── MCQ OPTIONS ─────────────────────────────────────────────── */
+/* options*/
 .mcq-option {
   cursor: pointer;
   text-align: left;
@@ -271,11 +267,9 @@ body {
   background: rgba(201,122,122,0.1) !important;
   color: var(--negative) !important;
 }
-
-/* ─── PROGRESS BAR ────────────────────────────────────────────── */
 .progress-bar { transition: width 0.65s cubic-bezier(0.4, 0, 0.2, 1); }
 
-/* ─── ANIMATIONS ──────────────────────────────────────────────── */
+/* anim */
 @keyframes slideUp   { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 @keyframes fadeIn    { from { opacity: 0; } to { opacity: 1; } }
 @keyframes pulseSoft { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
@@ -290,7 +284,6 @@ body {
 .slide-forward      { animation: slideInRight 0.25s ease-out both; }
 .slide-backward     { animation: slideInLeft 0.25s ease-out both; }
 
-/* ─── GRAIN ───────────────────────────────────────────────────── */
 .grain::after {
   content: '';
   position: fixed; inset: 0;
@@ -298,22 +291,20 @@ body {
   pointer-events: none; z-index: 9998; opacity: 0.18;
 }
 
-/* ─── SCROLLBAR ───────────────────────────────────────────────── */
+
 ::-webkit-scrollbar       { width: 5px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-
-/* ─── SELECTION ───────────────────────────────────────────────── */
 ::selection { background: rgba(139,163,197,0.25); color: var(--text-primary); }
 
-/* ─── FLOATING ANIMATION ──────────────────────────────────────── */
+
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
   50%       { transform: translateY(-6px); }
 }
 .float { animation: float 4s ease-in-out infinite; }
 
-/* ─── HOVER LIFT — deck cards, launcher cards ─────────────────── */
+
 .hover-lift {
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.2s ease;
 }
@@ -323,22 +314,29 @@ body {
   border-color: var(--border-soft);
 }
 
-/* ─── BUTTON ACTIVE PRESS ─────────────────────────────────────── */
+/*press */
 .btn-press:active { transform: scale(0.97); }
 
-/* ─── SMOOTH PAGE FADE ────────────────────────────────────────── */
+/* fade */
 .page-enter {
   animation: fadeIn 0.35s ease-out both;
 }
 
-/* ─── GLOW INPUT FOCUS (already in recall-input, global version) ─ */
+/* input */
 .input-glow:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(139,163,197,0.15);
 }
 
-/* ─── PROGRESS BAR SHIMMER ────────────────────────────────────── */
+/* buttons glow---*/
+button:hover .rating-rose,
+[data-rating="rose"]:hover   { box-shadow: 0 0 12px rgba(201,122,122,0.35) !important; border-color: rgba(201,122,122,1) !important; }
+[data-rating="amber"]:hover  { box-shadow: 0 0 12px rgba(232,168,66,0.35) !important;  border-color: rgba(232,168,66,1) !important; }
+[data-rating="sage"]:hover   { box-shadow: 0 0 12px rgba(125,171,130,0.35) !important; border-color: rgba(125,171,130,1) !important; }
+[data-rating="muted"]:hover  { box-shadow: 0 0 12px rgba(139,163,197,0.25) !important; border-color: var(--accent) !important; }
+
+/* progress bar */
 @keyframes shimmer {
   0%   { background-position: -200% center; }
   100% { background-position: 200% center; }
