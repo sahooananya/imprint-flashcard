@@ -180,7 +180,7 @@ export default function Home() {
       {/*header */}
       <header className="flex items-start justify-between mb-12 animate-slide-up">
         <div>
-          <img src="/logo.png" alt="Imprint" style={{ height: 52, width: 'auto', marginBottom: 12, objectFit: 'contain' }} />
+
           <h1 style={{
             fontFamily: '"Playfair Display", Georgia, serif',
             fontWeight: 700,
@@ -190,9 +190,9 @@ export default function Home() {
             color: 'var(--text-primary)',
             marginBottom: '0.75rem',
           }}>
-            Leave a mark.<br />
+            Imprint<br />
             <em style={{ color: 'var(--accent-soft)', fontStyle: 'italic', fontWeight: 400 , fontSize: 'clamp(1.4rem, 3vw, 2rem)', display: 'block',  marginTop: 8, }}>
-              Built for the long game.
+              Leave a mark.
             </em>
           </h1>
           <p style={{ color: 'var(--text-muted)' }} className="text-base">
