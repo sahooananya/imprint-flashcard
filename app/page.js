@@ -180,7 +180,7 @@ export default function Home() {
       {/*header */}
       <header className="flex items-start justify-between mb-12 animate-slide-up">
         <div>
-          <img src="../public/logo.png" alt="Imprint" style={{ height: 52, width: 'auto', marginBottom: 12, objectFit: 'contain' }} />
+          <img src="/logo.png" alt="Imprint" style={{ height: 52, width: 'auto', marginBottom: 12, objectFit: 'contain' }} />
           <h1 style={{
             fontFamily: '"Playfair Display", Georgia, serif',
             fontWeight: 700,
