@@ -182,10 +182,19 @@ export default function Home() {
         <div>
           <p style={{ color: 'var(--amber)', fontFamily: 'DM Mono' }}
             className="text-xs tracking-widest uppercase mb-3">Imprint</p>
-          <h1 style={{ color: 'var(--text-primary)', fontFamily: 'Playfair Display', lineHeight: 1.2 }}
-            className="text-5xl mb-3">
+          <h1 style={{
+            fontFamily: '"Cormorant Garamond", "Playfair Display", serif',
+            fontWeight: 600,
+            fontSize: 'clamp(2.8rem, 6vw, 4.5rem)',
+            letterSpacing: '-0.02em',
+            lineHeight: 1.1,
+            color: 'var(--text-primary)',
+            marginBottom: '0.75rem',
+          }}>
             Imprint<br />
-            <em style={{ color: 'var(--amber-soft)' }}>Leave a mark.</em>
+            <em style={{ color: 'var(--amber-soft)', fontStyle: 'italic', fontWeight: 400 }}>
+              Leave a mark.
+            </em>
           </h1>
           <p style={{ color: 'var(--text-muted)' }} className="text-base">
             PDF, PowerPoint, or image — get smart flashcards instantly.
