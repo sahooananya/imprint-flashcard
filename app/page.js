@@ -191,7 +191,7 @@ export default function Home() {
             marginBottom: '0.75rem',
           }}>
             Leave a mark.<br />
-            <em style={{ color: 'var(--accent-soft)', fontStyle: 'italic', fontWeight: 400 }}>
+            <em style={{ color: 'var(--accent-soft)', fontStyle: 'italic', fontWeight: 82 }}>
               Built for the long game.
             </em>
           </h1>
