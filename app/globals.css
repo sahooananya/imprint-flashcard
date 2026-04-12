@@ -305,3 +305,52 @@ body {
 
 /* ─── SELECTION ───────────────────────────────────────────────── */
 ::selection { background: rgba(139,163,197,0.25); color: var(--text-primary); }
+
+/* ─── FLOATING ANIMATION ──────────────────────────────────────── */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-6px); }
+}
+.float { animation: float 4s ease-in-out infinite; }
+
+/* ─── HOVER LIFT — deck cards, launcher cards ─────────────────── */
+.hover-lift {
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.2s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--card-shadow-hover), var(--card-glow);
+  border-color: var(--border-soft);
+}
+
+/* ─── BUTTON ACTIVE PRESS ─────────────────────────────────────── */
+.btn-press:active { transform: scale(0.97); }
+
+/* ─── SMOOTH PAGE FADE ────────────────────────────────────────── */
+.page-enter {
+  animation: fadeIn 0.35s ease-out both;
+}
+
+/* ─── GLOW INPUT FOCUS (already in recall-input, global version) ─ */
+.input-glow:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(139,163,197,0.15);
+}
+
+/* ─── PROGRESS BAR SHIMMER ────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+.progress-animated {
+  background: linear-gradient(
+          90deg,
+          var(--accent) 0%,
+          var(--accent-soft) 50%,
+          var(--accent) 100%
+  );
+  background-size: 200% auto;
+  animation: shimmer 2.5s linear infinite;
+  transition: width 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+}

@@ -180,20 +180,19 @@ export default function Home() {
       {/*header */}
       <header className="flex items-start justify-between mb-12 animate-slide-up">
         <div>
-          <p style={{ color: 'var(--amber)', fontFamily: 'DM Mono' }}
-            className="text-xs tracking-widest uppercase mb-3">Imprint</p>
+          <img src="Logo.png" alt="Imprint" style={{ height: 52, width: 'auto', marginBottom: 12, objectFit: 'contain' }} />
           <h1 style={{
-            fontFamily: '"Cormorant Garamond", "Playfair Display", serif',
+            fontFamily: '"Playfair Display", Georgia, serif',
             fontWeight: 600,
-            fontSize: 'clamp(2.8rem, 6vw, 4.5rem)',
+            fontSize: 'clamp(2.4rem, 5.5vw, 4rem)',
             letterSpacing: '-0.02em',
             lineHeight: 1.1,
             color: 'var(--text-primary)',
             marginBottom: '0.75rem',
           }}>
-            Imprint<br />
-            <em style={{ color: 'var(--amber-soft)', fontStyle: 'italic', fontWeight: 400 }}>
-              Leave a mark.
+            Leave a mark.<br />
+            <em style={{ color: 'var(--accent-soft)', fontStyle: 'italic', fontWeight: 400 }}>
+              Built for the long game.
             </em>
           </h1>
           <p style={{ color: 'var(--text-muted)' }} className="text-base">
@@ -208,7 +207,7 @@ export default function Home() {
           </button>
           {streak > 0 && (
             <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16 }}
-              className="flex flex-col items-center px-4 py-3">
+              className="flex flex-col items-center px-4 py-3 float">
               <span className="text-2xl">🔥</span>
               <span style={{ color: 'var(--amber)', fontFamily: 'Playfair Display' }} className="text-xl">{streak}</span>
               <span style={{ color: 'var(--text-muted)', fontFamily: 'DM Mono' }} className="text-xs">day streak</span>
@@ -364,7 +363,7 @@ export default function Home() {
 
               return (
                 <div key={deck.id} onClick={() => router.push(`/deck/${deck.id}`)}
-                  className="group relative card-surface p-6 cursor-pointer animate-slide-up"
+                  className="group relative card-surface p-6 cursor-pointer animate-slide-up hover-lift"
                   style={{ animationDelay: `${i * 0.04}s` }}>
 
                   <button onClick={(e) => handleDelete(e, deck.id)}

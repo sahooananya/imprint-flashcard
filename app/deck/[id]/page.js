@@ -376,6 +376,7 @@ export default function DeckPage() {
 
         <div className="flex flex-col gap-3 mb-6">
           <button onClick={() => startStudy('flashcard')}
+            className="hover-lift"
             style={{ ...S.surface, padding: 20, textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s ease' }}
             onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--amber-dim)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; }}>
@@ -385,6 +386,7 @@ export default function DeckPage() {
           </button>
 
           <button onClick={() => startStudy('recall')}
+            className="hover-lift"
             style={{ ...S.surface, padding: 20, textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s ease', borderColor: 'rgba(125,171,130,0.3)' }}
             onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--sage)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(125,171,130,0.3)'; }}>
@@ -393,6 +395,7 @@ export default function DeckPage() {
           </button>
 
           <button onClick={() => startStudy('mcq')}
+            className="hover-lift"
             style={{ ...S.surface, padding: 20, textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s ease', borderColor: 'rgba(125,171,130,0.2)' }}
             onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--sage)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(125,171,130,0.2)'; }}>
@@ -400,7 +403,7 @@ export default function DeckPage() {
             <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Pick the right answer from 4 options. Good for quick revision and recognition.</p>
           </button>
 
-          <div style={{ ...S.surface, padding: 20, borderColor: 'rgba(201,122,122,0.2)' }}>
+          <div className="hover-lift"  style={{ ...S.surface, padding: 20, borderColor: 'rgba(201,122,122,0.2)' }}>
             <p style={{ fontFamily: 'Playfair Display', color: 'var(--text-primary)', fontSize: '1.2rem', marginBottom: 4 }}>⏱ Test Mode</p>
             <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 14 }}>Set a timer and go through your deck. No pressure — just see where you stand.</p>
             <div className="flex gap-2 mb-4">
