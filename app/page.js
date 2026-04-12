@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
 import { getAllDecks, saveDeck, deleteDeck } from '../lib/storage';
 import { getMastery, getDueCards, getStreak } from '../lib/sm2';
+import MotivationBubble from '../components/bubble';
 
 const MODES = [
   { id: 'quick',    label: '⚡ Quick',    desc: '10 cards' },
@@ -429,6 +430,8 @@ export default function Home() {
           No decks yet. Upload a file to begin.
         </p>
       )}
+
+      <MotivationBubble trigger="load" />
     </main>
   );
 }
