@@ -8,9 +8,9 @@ import { getMastery, getDueCards, getStreak } from '../lib/sm2';
 import MotivationBubble from '../components/bubble';
 
 const MODES = [
-  { id: 'quick',    label: '⚡ Quick',    desc: '10 cards' },
-  { id: 'standard', label: '📖 Standard', desc: '20 cards' },
-  { id: 'deep',     label: '🧠 Deep',     desc: '35 cards' },
+  { id: 'quick',    label: 'Quick',    desc: '10 cards', icon: '⚡' },
+  { id: 'standard', label: 'Standard', desc: '20 cards', icon: '📖' },
+  { id: 'deep',     label: 'Deep',     desc: '35 cards', icon: '🧠' },
 ];
 const FILTERS = ['all', 'due', 'recent', 'mastered'];
 const ACCEPT  = '.pdf,.ppt,.pptx,image/jpeg,image/png,image/webp';
@@ -33,9 +33,18 @@ const DAILY_QUOTES = [
   "Study hard in silence. Let your knowledge make the noise.",
 ];
 
+const MARQUEE_ITEMS = [
+  'STUDY', 'LEARN', 'IMPRINT', 'MASTER', 'RECALL', 'RETAIN', 'GROW', 'REVIEW',
+  'STUDY', 'LEARN', 'IMPRINT', 'MASTER', 'RECALL', 'RETAIN', 'GROW', 'REVIEW',
+];
+
 function getDailyQuote() {
   const dayIndex = Math.floor(Date.now() / 86400000);
   return DAILY_QUOTES[dayIndex % DAILY_QUOTES.length];
+}
+
+function fmt(n) {
+  return String(n).padStart(2, '0');
 }
 
 export default function Home() {
@@ -53,7 +62,7 @@ export default function Home() {
   const router  = useRouter();
 
   useEffect(() => {
-    const all   = getAllDecks();
+    const all = getAllDecks();
     setDecks(Object.values(all).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
     setStreak(getStreak());
     const saved = localStorage.getItem('fe_theme') || 'dark';
@@ -68,29 +77,13 @@ export default function Home() {
     document.documentElement.setAttribute('data-theme', next);
   };
 
-  async function compressImage(file) {
-    return new Promise((resolve) => {
-      const canvas = document.createElement('canvas');
-      const img = new Image();
-      img.onload = () => {
-        const MAX = 1200;
-        let { width, height } = img;
-        if (width > MAX) { height = (height * MAX) / width; width = MAX; }
-        canvas.width = width; canvas.height = height;
-        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-        canvas.toBlob((blob) => resolve(new File([blob], file.name, { type: 'image/jpeg' })), 'image/jpeg', 0.82);
-      };
-      img.src = URL.createObjectURL(file);
-    });
-  }
-
   const handleFile = async (file) => {
     const name = file?.name?.toLowerCase() || '';
     const allowed = file && (
-        file.type === 'application/pdf' ||
-        file.type.startsWith('image/') ||
-        name.endsWith('.pptx') || name.endsWith('.ppt') ||
-        file.type.includes('presentationml') || file.type.includes('ms-powerpoint')
+      file.type === 'application/pdf' ||
+      file.type.startsWith('image/') ||
+      name.endsWith('.pptx') || name.endsWith('.ppt') ||
+      file.type.includes('presentationml') || file.type.includes('ms-powerpoint')
     );
     if (!allowed) { setUploadStatus('Upload a PDF, PowerPoint (.pptx), or image.'); return; }
 
@@ -100,7 +93,6 @@ export default function Home() {
     }
 
     let processedFile = file;
-
     if (file.type.startsWith('image/')) {
       processedFile = await new Promise((resolve) => {
         const canvas = document.createElement('canvas');
@@ -112,8 +104,8 @@ export default function Home() {
           canvas.width = width; canvas.height = height;
           canvas.getContext('2d').drawImage(img, 0, 0, width, height);
           canvas.toBlob(
-              (blob) => resolve(new File([blob], file.name, { type: 'image/jpeg' })),
-              'image/jpeg', 0.82
+            (blob) => resolve(new File([blob], file.name, { type: 'image/jpeg' })),
+            'image/jpeg', 0.82
           );
         };
         img.src = URL.createObjectURL(file);
@@ -133,7 +125,6 @@ export default function Home() {
       const res  = await fetch('/api/generate', { method: 'POST', body: fd });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Generation failed');
-
       const deck = {
         id: uuidv4(), title: deckTitle,
         createdAt: new Date().toISOString(),
@@ -174,262 +165,516 @@ export default function Home() {
     });
 
   const totalDue = decks.reduce((acc, d) => acc + getDueCards(d.cards).length, 0);
+  const totalCards = decks.reduce((acc, d) => acc + d.cards.length, 0);
 
   return (
-    <main className="min-h-screen px-5 py-10 max-w-4xl mx-auto">
+    <main className="min-h-screen max-w-4xl mx-auto">
 
-      {/*header */}
-      <header className="flex items-start justify-between mb-12 animate-slide-up">
-        <div>
-
-          <h1 style={{
-            fontFamily: '"Playfair Display", Georgia, serif',
-            fontWeight: 700,
-            fontSize: 'clamp(2.4rem, 5.5vw, 4rem)',
-            letterSpacing: '-0.02em',
-            lineHeight: 1.15,
-            color: 'var(--text-primary)',
-            marginBottom: '0.75rem',
-          }}>
-            Imprint<br />
-            <em style={{ color: 'var(--accent-soft)', fontStyle: 'italic', fontWeight: 400 , fontSize: 'clamp(1.4rem, 3vw, 2rem)', display: 'block',  marginTop: 8, }}>
-              Leave a mark.
-            </em>
-          </h1>
-          <p style={{ color: 'var(--text-muted)' }} className="text-base">
-            PDF, PowerPoint, or image — get smart flashcards instantly.
-          </p>
-        </div>
-        <div className="flex flex-col items-end gap-3 ml-4 shrink-0">
-          <button onClick={toggleTheme}
-            style={{ color: 'var(--text-muted)', border: '1px solid var(--border)', borderRadius: 9999 }}
-            className="font-mono text-xs px-3 py-1.5 transition-colors hover:opacity-80">
-            {theme === 'dark' ? '☀️ Light' : '🌙 Dark'}
-          </button>
-          {streak > 0 && (
-            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16 }}
-              className="flex flex-col items-center px-4 py-3 float">
-              <span className="text-2xl">🔥</span>
-              <span style={{ color: 'var(--amber)', fontFamily: 'Playfair Display' }} className="text-xl">{streak}</span>
-              <span style={{ color: 'var(--text-muted)', fontFamily: 'DM Mono' }} className="text-xs">day streak</span>
+      {/* ── HERO HEADER ── */}
+      <header className="px-6 pt-12 pb-0 animate-slide-up">
+        <div className="flex items-start justify-between mb-8">
+          <div style={{ flex: 1 }}>
+            {/* Brand */}
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.4rem' }}>
+              <h1 style={{
+                fontFamily: '"Cormorant Garamond", Georgia, serif',
+                fontWeight: 700,
+                fontSize: 'clamp(3.2rem, 7vw, 5.5rem)',
+                letterSpacing: '-0.03em',
+                lineHeight: 0.95,
+                color: 'var(--text-primary)',
+              }}>Imprint</h1>
+              {/* Live badge */}
+              <span style={{
+                fontFamily: '"DM Mono", monospace',
+                fontSize: '10px',
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: 'var(--sage)',
+                border: '1px solid var(--sage)',
+                borderRadius: 9999,
+                padding: '2px 8px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                marginBottom: 4,
+              }}>
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--sage)', display: 'inline-block' }}
+                  className="animate-pulse-soft" />
+                Live
+              </span>
             </div>
-          )}
+            <p style={{
+              fontFamily: '"Cormorant Garamond", Georgia, serif',
+              fontStyle: 'italic',
+              fontWeight: 400,
+              fontSize: 'clamp(1.1rem, 2.2vw, 1.4rem)',
+              color: 'var(--text-muted)',
+              letterSpacing: '0.01em',
+              marginBottom: '0.75rem',
+            }}>Leave a mark on your memory.</p>
+            <p style={{ color: 'var(--text-faint)', fontSize: '0.875rem', fontFamily: '"Syne", sans-serif' }}>
+              PDF · PowerPoint · Image — smart flashcards in seconds.
+            </p>
+          </div>
+
+          {/* Right column: controls + streak */}
+          <div className="flex flex-col items-end gap-3 ml-6 shrink-0">
+            <button onClick={toggleTheme}
+              style={{
+                color: 'var(--text-muted)',
+                border: '1px solid var(--border)',
+                borderRadius: 9999,
+                fontFamily: '"DM Mono", monospace',
+                fontSize: '11px',
+                letterSpacing: '0.06em',
+                padding: '6px 14px',
+                background: 'var(--bg-raised)',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}>
+              {theme === 'dark' ? '☀ Light' : '☽ Dark'}
+            </button>
+            {streak > 0 && (
+              <div style={{
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border)',
+                borderRadius: 16,
+                padding: '10px 16px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 2,
+              }} className="float">
+                <span style={{ fontSize: 20 }}>🔥</span>
+                <span style={{
+                  fontFamily: '"Cormorant Garamond", Georgia, serif',
+                  fontWeight: 700,
+                  fontSize: '1.4rem',
+                  color: 'var(--amber)',
+                  lineHeight: 1,
+                }}>{streak}</span>
+                <span style={{ fontFamily: '"DM Mono", monospace', fontSize: '9px', color: 'var(--text-faint)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>day streak</span>
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Stats row */}
+        {(totalCards > 0 || streak > 0) && (
+          <div style={{ display: 'flex', gap: 24, marginBottom: 24 }} className="animate-fade-in">
+            {totalCards > 0 && (
+              <div>
+                <div style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '2rem', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>{totalCards}</div>
+                <div style={{ fontFamily: '"DM Mono", monospace', fontSize: '10px', color: 'var(--text-faint)', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 2 }}>total cards</div>
+              </div>
+            )}
+            {decks.length > 0 && (
+              <div>
+                <div style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '2rem', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>{decks.length}</div>
+                <div style={{ fontFamily: '"DM Mono", monospace', fontSize: '10px', color: 'var(--text-faint)', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 2 }}>decks</div>
+              </div>
+            )}
+            {totalDue > 0 && (
+              <div>
+                <div style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '2rem', fontWeight: 700, color: 'var(--amber)', lineHeight: 1 }}>{totalDue}</div>
+                <div style={{ fontFamily: '"DM Mono", monospace', fontSize: '10px', color: 'var(--text-faint)', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 2 }}>due today</div>
+              </div>
+            )}
+          </div>
+        )}
       </header>
 
-      {/* due banner*/}
-      {totalDue > 0 && (
-        <div style={{ background: 'rgba(232,168,66,0.08)', border: '1px solid rgba(232,168,66,0.25)', borderRadius: 9999 }}
-          className="flex items-center gap-2 px-4 py-2 w-fit mb-8 animate-fade-in">
-          <div style={{ background: 'var(--amber)', borderRadius: '50%', width: 7, height: 7 }} className="animate-pulse-soft" />
-          <span style={{ color: 'var(--amber-soft)', fontFamily: 'DM Mono' }} className="text-sm">
-            {totalDue} card{totalDue !== 1 ? 's' : ''} due for review
-          </span>
-        </div>
-      )}
-
-      {/*motivation quote*/}
+      {/* ── MARQUEE STRIP ── */}
       <div style={{
-        borderLeft: '2px solid var(--amber-dim)',
-        paddingLeft: 16, marginBottom: 28,
-        color: 'var(--text-muted)', fontStyle: 'italic', fontSize: 14, lineHeight: 1.6
-      }}>
-        "{getDailyQuote()}"
+        borderTop: '1px solid var(--border)',
+        borderBottom: '1px solid var(--border)',
+        padding: '10px 0',
+        margin: '0 0 32px 0',
+        background: 'var(--bg-raised)',
+        overflow: 'hidden',
+      }} className="marquee-wrap">
+        <div className="marquee-track">
+          {MARQUEE_ITEMS.map((item, i) => (
+            <span key={i} style={{
+              fontFamily: '"DM Mono", monospace',
+              fontSize: '11px',
+              letterSpacing: '0.18em',
+              textTransform: 'uppercase',
+              color: i % 4 === 2 ? 'var(--amber)' : 'var(--text-faint)',
+              marginRight: 36,
+              userSelect: 'none',
+            }}>
+              {item}
+              {i % 2 === 1 && <span style={{ marginLeft: 36, color: 'var(--border)' }}>·</span>}
+            </span>
+          ))}
+        </div>
       </div>
 
-      {/* flash card types */}
-      <div className="grid grid-cols-3 gap-2 mb-4 animate-slide-up" style={{ animationDelay: '0.08s' }}>
-        {MODES.map((m) => (
-          <button key={m.id} onClick={() => setMode(m.id)}
+      <div className="px-6">
+        {/* ── DUE BANNER ── */}
+        {totalDue > 0 && (
+          <div style={{
+            background: 'var(--amber-dim)',
+            border: '1px solid rgba(232,168,66,0.25)',
+            borderRadius: 9999,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '6px 16px',
+            marginBottom: 24,
+          }} className="animate-fade-in">
+            <div style={{ background: 'var(--amber)', borderRadius: '50%', width: 7, height: 7 }} className="animate-pulse-soft" />
+            <span style={{ fontFamily: '"DM Mono", monospace', fontSize: '12px', color: 'var(--amber-soft)' }}>
+              {totalDue} card{totalDue !== 1 ? 's' : ''} due for review
+            </span>
+          </div>
+        )}
+
+        {/* ── DAILY QUOTE ── */}
+        <div style={{
+          borderLeft: '2px solid var(--amber-dim)',
+          paddingLeft: 16,
+          marginBottom: 32,
+          color: 'var(--text-muted)',
+          fontFamily: '"Cormorant Garamond", Georgia, serif',
+          fontStyle: 'italic',
+          fontSize: '1.05rem',
+          lineHeight: 1.65,
+        }}>
+          "{getDailyQuote()}"
+        </div>
+
+        {/* ── MODE SELECTOR ── */}
+        <div style={{ marginBottom: 16 }}>
+          <p style={{ fontFamily: '"DM Mono", monospace', fontSize: '10px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 10 }}>
+            Session depth
+          </p>
+          <div className="grid grid-cols-3 gap-2" style={{ animationDelay: '0.08s' }}>
+            {MODES.map((m) => (
+              <button key={m.id} onClick={() => setMode(m.id)}
+                style={{
+                  background: mode === m.id ? 'var(--bg-card)' : 'var(--bg-raised)',
+                  border: `1.5px solid ${mode === m.id ? 'var(--amber)' : 'var(--border)'}`,
+                  borderRadius: 14,
+                  color: mode === m.id ? 'var(--text-primary)' : 'var(--text-muted)',
+                  padding: '12px 8px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                }}>
+                <div style={{ fontSize: 18, marginBottom: 4 }}>{m.icon}</div>
+                <div style={{ fontFamily: '"Syne", sans-serif', fontWeight: 600, fontSize: '0.8rem', letterSpacing: '0.05em' }}>{m.label}</div>
+                <div style={{ fontFamily: '"DM Mono", monospace', fontSize: '10px', color: 'var(--text-faint)', marginTop: 2 }}>{m.desc}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* ── UPLOAD DROPZONE ── */}
+        <div className="mb-12 animate-slide-up" style={{ animationDelay: '0.12s' }}>
+          <div
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handleDrop}
+            onClick={() => !uploading && fileRef.current?.click()}
             style={{
-              background: mode === m.id ? 'var(--bg-card)' : 'var(--bg-raised)',
-              border: `1.5px solid ${mode === m.id ? 'var(--amber-dim)' : 'var(--border)'}`,
-              borderRadius: 12, color: mode === m.id ? 'var(--text-primary)' : 'var(--text-muted)',
-            }}
-            className="py-3 text-center transition-all duration-200 hover:opacity-90">
-            <div style={{ fontFamily: 'DM Mono' }} className="text-sm font-medium">{m.label}</div>
-            <div style={{ color: 'var(--text-faint)' }} className="text-xs mt-0.5">{m.desc}</div>
-          </button>
-        ))}
-      </div>
+              border: `2px dashed ${dragOver ? 'var(--amber)' : 'var(--border-soft)'}`,
+              background: dragOver ? 'var(--amber-dim)' : 'var(--bg-raised)',
+              borderRadius: 20,
+              cursor: uploading ? 'default' : 'pointer',
+              transform: dragOver ? 'scale(1.015)' : 'scale(1)',
+              transition: 'all 0.25s ease',
+              padding: '48px 32px',
+              textAlign: 'center',
+              position: 'relative',
+              overflow: 'hidden',
+            }}>
+            {/* corner accents */}
+            <div style={{ position: 'absolute', top: 12, left: 12, width: 18, height: 18, borderTop: '2px solid var(--border-soft)', borderLeft: '2px solid var(--border-soft)', borderRadius: '3px 0 0 0' }} />
+            <div style={{ position: 'absolute', top: 12, right: 12, width: 18, height: 18, borderTop: '2px solid var(--border-soft)', borderRight: '2px solid var(--border-soft)', borderRadius: '0 3px 0 0' }} />
+            <div style={{ position: 'absolute', bottom: 12, left: 12, width: 18, height: 18, borderBottom: '2px solid var(--border-soft)', borderLeft: '2px solid var(--border-soft)', borderRadius: '0 0 0 3px' }} />
+            <div style={{ position: 'absolute', bottom: 12, right: 12, width: 18, height: 18, borderBottom: '2px solid var(--border-soft)', borderRight: '2px solid var(--border-soft)', borderRadius: '0 0 3px 0' }} />
 
-      {/* uploading_files */}
-      <div className="mb-12 animate-slide-up" style={{ animationDelay: '0.12s' }}>
-        <div
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={handleDrop}
-          onClick={() => !uploading && fileRef.current?.click()}
-          style={{
-            border: `2px dashed ${dragOver ? 'var(--amber)' : 'var(--border-soft)'}`,
-            background: dragOver ? 'rgba(232,168,66,0.06)' : 'var(--bg-raised)',
-            borderRadius: 18,
-            cursor: uploading ? 'default' : 'pointer',
-            transform: dragOver ? 'scale(1.01)' : 'scale(1)',
-            transition: 'all 0.25s ease',
-          }}
-          className="p-12 text-center">
-          <input ref={fileRef} type="file" accept={ACCEPT} className="hidden"
-            onChange={(e) => handleFile(e.target.files[0])} />
-          {uploading ? (
-            <div className="space-y-3">
-              <div style={{ border: '2px solid var(--amber)', borderTopColor: 'transparent', borderRadius: '50%', width: 36, height: 36 }}
-                className="animate-spin mx-auto" />
-              <p style={{ color: 'var(--text-muted)', fontFamily: 'DM Mono' }} className="text-sm">{uploadStatus}</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-4xl">📄</p>
+            <input ref={fileRef} type="file" accept={ACCEPT} className="hidden"
+              onChange={(e) => handleFile(e.target.files[0])} />
+            {uploading ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+                <div style={{ border: '2px solid var(--amber)', borderTopColor: 'transparent', borderRadius: '50%', width: 38, height: 38 }}
+                  className="animate-spin" />
+                <p style={{ color: 'var(--text-muted)', fontFamily: '"DM Mono", monospace', fontSize: '13px' }}>{uploadStatus}</p>
+              </div>
+            ) : (
               <div>
-                <p style={{ color: 'var(--text-primary)', fontFamily: 'Playfair Display' }} className="text-xl mb-1">
-                  Drop your file here
+                <p style={{ fontSize: '2.5rem', marginBottom: 12 }}>📄</p>
+                <p style={{
+                  fontFamily: '"Cormorant Garamond", Georgia, serif',
+                  fontWeight: 600,
+                  fontSize: '1.4rem',
+                  color: 'var(--text-primary)',
+                  marginBottom: 6,
+                }}>Drop your file here</p>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontFamily: '"Syne", sans-serif' }}>
+                  PDF · PowerPoint (.pptx) · Image
                 </p>
-                <p style={{ color: 'var(--text-muted)' }} className="text-sm">
-                  PDF · PowerPoint (.pptx) · Image (JPG, PNG)
+                {uploadStatus && (
+                  <p style={{
+                    color: uploadStatus.startsWith('✓') ? 'var(--sage)' : 'var(--rose)',
+                    fontFamily: '"DM Mono", monospace',
+                    fontSize: '13px',
+                    marginTop: 12,
+                  }}>{uploadStatus}</p>
+                )}
+              </div>
+            )}
+          </div>
+
+          <input type="text" value={deckName} onChange={(e) => setDeckName(e.target.value)}
+            placeholder="Deck name (optional — defaults to filename)"
+            style={{
+              background: 'var(--bg-raised)',
+              border: '1.5px solid var(--border)',
+              borderRadius: 12,
+              color: 'var(--text-primary)',
+              marginTop: 12,
+              width: '100%',
+              padding: '12px 16px',
+              fontSize: '0.9rem',
+              fontFamily: '"Syne", sans-serif',
+              transition: 'border-color 0.2s',
+              outline: 'none',
+            }}
+            onFocus={e => e.target.style.borderColor = 'var(--accent)'}
+            onBlur={e => e.target.style.borderColor = 'var(--border)'}
+          />
+        </div>
+
+        {/* ── DECKS ── */}
+        {decks.length > 0 && (
+          <>
+            {/* Mastery explainer */}
+            <div style={{
+              background: 'var(--bg-card)',
+              border: '1.5px solid var(--border)',
+              borderRadius: 16,
+              padding: '16px 20px',
+              marginBottom: 28,
+              display: 'flex',
+              gap: 14,
+              alignItems: 'flex-start',
+            }}>
+              <span style={{ fontSize: 20, flexShrink: 0 }}>🔁</span>
+              <div>
+                <p style={{ color: 'var(--text-primary)', fontWeight: 600, marginBottom: 4, fontSize: '0.875rem', fontFamily: '"Syne", sans-serif' }}>
+                  Why isn't your deck 100% yet?
+                </p>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.8125rem', lineHeight: 1.65, margin: 0, fontFamily: '"Syne", sans-serif' }}>
+                  Remembering something once isn't knowing it. Mastery means you recalled it today, again in a few days, and again a week later — that's what actually sticks.
                 </p>
               </div>
-              {uploadStatus && (
-                <p style={{ color: uploadStatus.startsWith('✓') ? 'var(--sage)' : 'var(--rose)', fontFamily: 'DM Mono' }} className="text-sm">
-                  {uploadStatus}
-                </p>
-              )}
             </div>
-          )}
-        </div>
 
-        <input type="text" value={deckName} onChange={(e) => setDeckName(e.target.value)}
-          placeholder="Deck name (optional — defaults to filename)"
-          style={{
-            background: 'var(--bg-raised)', border: '1.5px solid var(--border)',
-            borderRadius: 12, color: 'var(--text-primary)', marginTop: 12,
-          }}
-          className="w-full px-4 py-3 text-sm transition-colors focus:outline-none" />
-      </div>
-
-      {/* deck list */}
-      {decks.length > 0 && (
-          <>
-          {/* mastery explanation */}
-          <div style={{
-            background: 'var(--bg-card)', border: '1.5px solid var(--border)',
-            borderRadius: 14, padding: '16px 20px', marginBottom: 24,
-            display: 'flex', gap: 14, alignItems: 'flex-start'
-          }}>
-            <span style={{fontSize: 22, flexShrink: 0}}>🔁</span>
-            <div>
-              <p style={{color: 'var(--text-primary)', fontWeight: 500, marginBottom: 4, fontSize: 14}}>
-                Why isn't your deck 100% yet?
-              </p>
-              <p style={{color: 'var(--text-muted)', fontSize: 13, lineHeight: 1.6, margin: 0}}>
-                Because remembering something once isn't the same as knowing it. Mastery means you recalled it today, again in a few days, and again a week later — that's what sticks.
-              </p>
-            </div>
-          </div>
-
-        <section>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-            <h2 style={{ color: 'var(--text-primary)', fontFamily: 'Playfair Display' }} className="text-2xl">Your Decks</h2>
-            <div className="flex flex-wrap gap-2">
-              <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-                placeholder="🔍 Search…"
-                style={{ background: 'var(--bg-raised)', border: '1px solid var(--border)', borderRadius: 9999, color: 'var(--text-primary)' }}
-                className="font-mono text-xs px-4 py-2 w-36 focus:outline-none" />
-              {FILTERS.map((f) => (
-                <button key={f} onClick={() => setFilter(f)}
-                  style={{
-                    background: filter === f ? 'var(--amber)' : 'var(--bg-raised)',
-                    color: filter === f ? '#1a1612' : 'var(--text-muted)',
-                    border: `1px solid ${filter === f ? 'var(--amber)' : 'var(--border)'}`,
-                    borderRadius: 9999,
-                  }}
-                  className="font-mono text-xs px-3 py-2 capitalize transition-all">
-                  {f}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {filteredDecks.length === 0 && (
-            <p style={{ color: 'var(--text-faint)' }} className="text-center italic py-8">No decks match this filter.</p>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredDecks.map((deck, i) => {
-              const mastery = getMastery(deck.cards);
-              const due     = getDueCards(deck.cards).length;
-              const masteryColor = mastery >= 80 ? 'var(--sage)' : mastery >= 40 ? 'var(--amber-soft)' : 'var(--rose)';
-              const types = ['concept','definition','example'].map((t) => ({
-                t, count: deck.cards.filter((c) => c.type === t).length
-              })).filter((x) => x.count > 0);
-
-              return (
-                <div key={deck.id} onClick={() => router.push(`/deck/${deck.id}`)}
-                  className="group relative card-surface p-6 cursor-pointer animate-slide-up hover-lift"
-                  style={{ animationDelay: `${i * 0.04}s` }}>
-
-                  <button onClick={(e) => handleDelete(e, deck.id)}
-                    style={{ color: 'var(--text-faint)', position: 'absolute', top: 16, right: 16, fontSize: 20, lineHeight: 1 }}
-                    className="opacity-0 group-hover:opacity-100 hover:text-rose transition-all">×</button>
-
-                  <h3 style={{ color: 'var(--text-primary)', fontFamily: 'Playfair Display', lineHeight: 1.3 }}
-                    className="text-xl mb-1 pr-8">{deck.title}</h3>
-
-                  <p style={{ color: 'var(--text-faint)', fontFamily: 'DM Mono' }} className="text-xs mb-3">
-                    {deck.cards.length} cards · {new Date(deck.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                    {deck.mode && <span className="ml-1 opacity-60">· {deck.mode}</span>}
-                  </p>
-
-                  {deck.topics?.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mb-3">
-                      {deck.topics.slice(0, 3).map((t) => (
-                        <span key={t} style={{ background: 'var(--bg-raised)', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: 9999 }}
-                          className="font-mono text-xs px-2 py-0.5">{t}</span>
-                      ))}
-                      {deck.topics.length > 3 && <span style={{ color: 'var(--text-faint)' }} className="font-mono text-xs py-0.5">+{deck.topics.length - 3}</span>}
-                    </div>
-                  )}
-
-                  {types.length > 0 && (
-                    <div className="flex gap-3 mb-3">
-                      {types.map(({ t, count }) => (
-                        <span key={t} style={{ color: 'var(--text-muted)' }} className="font-mono text-xs">
-                          {t === 'concept' ? '💡' : t === 'definition' ? '📖' : '🔢'} {count}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Progress bar */}
-                  <div style={{ background: 'var(--bg)', borderRadius: 9999, height: 5 }} className="w-full mb-3">
-                    <div style={{ width: `${mastery}%`, background: 'var(--amber)', borderRadius: 9999, height: 5 }} className="progress-bar" />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span style={{ color: masteryColor, fontFamily: 'DM Mono' }} className="text-xs">{mastery}% mastered</span>
-                    <div className="flex gap-2 items-center">
-                      {due > 0 && (
-                        <span style={{ color: 'var(--amber-soft)', background: 'rgba(232,168,66,0.1)', border: '1px solid rgba(232,168,66,0.2)', borderRadius: 9999 }}
-                          className="font-mono text-xs px-2 py-0.5">{due} due</span>
-                      )}
-                      {deck.lastStudied && (
-                        <span style={{ color: 'var(--text-faint)' }} className="font-mono text-xs">↩ resume</span>
-                      )}
-                    </div>
-                  </div>
+            <section>
+              {/* Section header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+                  <h2 style={{
+                    fontFamily: '"Cormorant Garamond", Georgia, serif',
+                    fontWeight: 700,
+                    fontSize: '1.75rem',
+                    color: 'var(--text-primary)',
+                    lineHeight: 1,
+                  }}>Your Decks</h2>
+                  <span style={{ fontFamily: '"DM Mono", monospace', fontSize: '11px', color: 'var(--text-faint)' }}>
+                    {fmt(filteredDecks.length)} / {fmt(decks.length)}
+                  </span>
                 </div>
-              );
-            })}
-          </div>
-        </section>
-      </>
-      )}
 
-      {decks.length === 0 && !uploading && (
-        <p style={{ color: 'var(--text-faint)', fontFamily: 'Playfair Display' }}
-          className="text-center italic text-xl mt-20">
-          No decks yet. Upload a file to begin.
-        </p>
-      )}
+                <div className="flex flex-wrap gap-2">
+                  <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search…"
+                    style={{
+                      background: 'var(--bg-raised)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 9999,
+                      color: 'var(--text-primary)',
+                      fontFamily: '"DM Mono", monospace',
+                      fontSize: '11px',
+                      padding: '6px 14px',
+                      width: 120,
+                      outline: 'none',
+                    }} />
+                  {FILTERS.map((f) => (
+                    <button key={f} onClick={() => setFilter(f)}
+                      style={{
+                        background: filter === f ? 'var(--amber)' : 'var(--bg-raised)',
+                        color: filter === f ? '#1a1612' : 'var(--text-muted)',
+                        border: `1px solid ${filter === f ? 'var(--amber)' : 'var(--border)'}`,
+                        borderRadius: 9999,
+                        fontFamily: '"DM Mono", monospace',
+                        fontSize: '11px',
+                        letterSpacing: '0.06em',
+                        textTransform: 'uppercase',
+                        padding: '6px 12px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                      }}>
+                      {f}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {filteredDecks.length === 0 && (
+                <p style={{ color: 'var(--text-faint)', fontFamily: '"Cormorant Garamond", serif', fontStyle: 'italic', fontSize: '1.1rem' }}
+                  className="text-center py-8">Nothing here yet — try a different filter.</p>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-16">
+                {filteredDecks.map((deck, i) => {
+                  const mastery = getMastery(deck.cards);
+                  const due     = getDueCards(deck.cards).length;
+                  const masteryColor =
+                    mastery >= 80 ? 'var(--sage)' :
+                    mastery >= 40 ? 'var(--amber-soft)' : 'var(--rose)';
+                  const types = ['concept','definition','example'].map((t) => ({
+                    t, count: deck.cards.filter((c) => c.type === t).length
+                  })).filter((x) => x.count > 0);
+
+                  return (
+                    <div key={deck.id}
+                      onClick={() => router.push(`/deck/${deck.id}`)}
+                      className="group relative card-surface p-6 cursor-pointer animate-slide-up hover-lift"
+                      style={{ animationDelay: `${i * 0.04}s` }}>
+
+                      {/* index number */}
+                      <span style={{
+                        position: 'absolute',
+                        top: 20,
+                        left: 20,
+                        fontFamily: '"DM Mono", monospace',
+                        fontSize: '10px',
+                        color: 'var(--text-faint)',
+                        letterSpacing: '0.1em',
+                      }}>{fmt(i + 1)}</span>
+
+                      {/* delete */}
+                      <button onClick={(e) => handleDelete(e, deck.id)}
+                        style={{
+                          color: 'var(--text-faint)',
+                          position: 'absolute',
+                          top: 16,
+                          right: 16,
+                          fontSize: 20,
+                          lineHeight: 1,
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          opacity: 0,
+                          transition: 'opacity 0.2s',
+                        }}
+                        className="group-hover:opacity-100">×</button>
+
+                      {/* title */}
+                      <h3 style={{
+                        fontFamily: '"Cormorant Garamond", Georgia, serif',
+                        fontWeight: 600,
+                        fontSize: '1.25rem',
+                        lineHeight: 1.25,
+                        color: 'var(--text-primary)',
+                        marginBottom: 6,
+                        marginTop: 18,
+                        paddingRight: 24,
+                      }}>{deck.title}</h3>
+
+                      <p style={{ fontFamily: '"DM Mono", monospace', fontSize: '10px', color: 'var(--text-faint)', marginBottom: 12, letterSpacing: '0.06em' }}>
+                        {deck.cards.length} cards · {new Date(deck.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                        {deck.mode && <span style={{ opacity: 0.6 }}> · {deck.mode}</span>}
+                      </p>
+
+                      {/* topics */}
+                      {deck.topics?.length > 0 && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 10 }}>
+                          {deck.topics.slice(0, 3).map((t) => (
+                            <span key={t} style={{
+                              background: 'var(--bg-raised)',
+                              border: '1px solid var(--border)',
+                              color: 'var(--text-muted)',
+                              borderRadius: 9999,
+                              fontFamily: '"DM Mono", monospace',
+                              fontSize: '10px',
+                              padding: '2px 8px',
+                            }}>{t}</span>
+                          ))}
+                          {deck.topics.length > 3 && (
+                            <span style={{ fontFamily: '"DM Mono", monospace', fontSize: '10px', color: 'var(--text-faint)', padding: '2px 0' }}>
+                              +{deck.topics.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* card types */}
+                      {types.length > 0 && (
+                        <div style={{ display: 'flex', gap: 14, marginBottom: 12 }}>
+                          {types.map(({ t, count }) => (
+                            <span key={t} style={{ color: 'var(--text-muted)', fontFamily: '"DM Mono", monospace', fontSize: '10px' }}>
+                              {t === 'concept' ? '💡' : t === 'definition' ? '📖' : '🔢'} {count}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Progress */}
+                      <div style={{ background: 'var(--bg)', borderRadius: 9999, height: 4, marginBottom: 10 }}>
+                        <div style={{ width: `${mastery}%`, background: 'var(--accent)', borderRadius: 9999, height: 4 }}
+                          className="progress-bar" />
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ color: masteryColor, fontFamily: '"DM Mono", monospace', fontSize: '11px' }}>
+                          {mastery}% mastered
+                        </span>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          {due > 0 && (
+                            <span style={{
+                              color: 'var(--amber-soft)',
+                              background: 'var(--amber-dim)',
+                              border: '1px solid rgba(232,168,66,0.22)',
+                              borderRadius: 9999,
+                              fontFamily: '"DM Mono", monospace',
+                              fontSize: '10px',
+                              padding: '2px 8px',
+                            }}>{due} due</span>
+                          )}
+                          {deck.lastStudied && (
+                            <span style={{ color: 'var(--text-faint)', fontFamily: '"DM Mono", monospace', fontSize: '10px' }}>↩ resume</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          </>
+        )}
+
+        {decks.length === 0 && !uploading && (
+          <div style={{ textAlign: 'center', marginTop: 80 }}>
+            <p style={{
+              fontFamily: '"Cormorant Garamond", Georgia, serif',
+              fontStyle: 'italic',
+              fontSize: '1.4rem',
+              color: 'var(--text-faint)',
+              marginBottom: 8,
+            }}>Nothing here yet.</p>
+            <p style={{ fontFamily: '"Syne", sans-serif', fontSize: '0.875rem', color: 'var(--text-faint)' }}>
+              Upload a file above to create your first deck.
+            </p>
+          </div>
+        )}
+      </div>
 
       <MotivationBubble trigger="load" />
     </main>
