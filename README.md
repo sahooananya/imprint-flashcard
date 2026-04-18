@@ -12,7 +12,9 @@
 </p>
 
 <p align="center">
-  <a href="https://imprint-flashcard.vercel.app"><strong>→ Try it live</strong></a>
+  <a href="https://imprint-flashcard.vercel.app"><strong>→ Try it live</strong>
+    <img src="./demo.gif" alt="Imprint Demo" width="900"/>
+  </a>
 </p>
 
 ---
